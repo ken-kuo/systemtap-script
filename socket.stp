@@ -1,0 +1,9 @@
+#! /usr/bin/env stap
+
+probe kernel.function("inet_bind_bucket_destroy") {
+	if ("socket_test" == execname()){
+		printf("%s\n", $$parms$$);
+		print_backtrace()
+	}
+}
+

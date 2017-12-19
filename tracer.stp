@@ -1,0 +1,23 @@
+#! /usr/bin/env stap
+
+global tracer_running = 0;
+
+probe process("/usr/libexec/qemu-kvm").begin
+{
+#    raise(%{ SIGSTOP %});
+
+#trace_cmd = sprintf("gdb -p %d", pid());
+    trace_cmd = sprintf("strace -p %d -e trace=ioctl 2>&1 | tee -a tracer.log", pid());
+
+    if (tracer_running == 0)
+    {
+        tracer_running = 1;
+        printf("trace PID %d [%s]\n", pid(), trace_cmd);
+        system(trace_cmd);
+    }
+    else
+    {
+        printf("trace PID %d \n", pid());
+    }
+}
+

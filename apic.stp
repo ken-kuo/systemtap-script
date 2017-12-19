@@ -1,0 +1,25 @@
+#! /usr/bin/env stap
+
+#probe process("/usr/bin/qemu-system-x86_64").function("try_get_cpuid") {
+#	printf("%s\n", $$parms);
+#}
+
+
+#probe module("kvm_intel").function("vmx_handle_exit") {
+#	print_backtrace()
+#}
+
+
+#@define dump_var_all(global_var) %( printf("@global_var = %d\n", @var("@global_var")) %)
+@define dump_var(global_var) %( printf(@global_var " = %s\n", @var(@global_var)$$) %)
+
+probe oneshot {
+	@dump_var("nr_cpu_ids")
+	@dump_var("nr_irqs")
+	@dump_var("gsi_top")
+	@dump_var("io_apic_irqs")
+	@dump_var("legacy_pic")
+	@dump_var("nr_ioapics")
+	@dump_var("ioapics")
+#	printf("legacy_pic->nr_legacy_irqs = %s\n", @var("legacy_pic"))
+}
