@@ -1,0 +1,6 @@
+probe oneshot
+{
+	printf("%s\n", kernel_string(0xffffffff8169e100))
+	exit ()
+}
+

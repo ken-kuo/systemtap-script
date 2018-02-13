@@ -1,0 +1,132 @@
+#! /usr/bin/env stap
+
+#@define dump_var_all(global_var) %( printf("@global_var = %d\n", @var("@global_var")) %)
+@define dump_var(global_var) %( printf(@global_var " = %s\n", @var(@global_var)$$) %)
+global messages_on = 0
+
+#probe oneshot {
+#	@dump_var("memcg_kmem_enabled_key")
+#}
+#
+#probe process("/usr/libexec/qemu-kvm").function("kvm_set_phys_mem") {
+#	printf("section->mr->name = %s "
+#			"section->mr->alias = 0x%lx "
+#			"section->mr->ram = 0x%lx "
+#			"section->mr->rom_device = 0x%lx "
+#			"section->mr->readonly = 0x%lx "
+#			"section->size = 0x%lx "
+#			"section->readonly = 0x%lx "
+#			"section->offset_within_region = 0x%lx "
+#			"section->offset_within_address_space = 0x%lx "
+#			"\n",
+#			user_string($section->mr->name),
+#			$section->mr->alias,
+#			$section->mr->ram,
+#			$section->mr->rom_device,
+#			$section->mr->readonly,
+#			($section->size->hi << 64) + $section->size->lo,
+#			$section->readonly,
+#			$section->offset_within_region,
+#			$section->offset_within_address_space)
+#	print_ubacktrace()
+#	printf("\n")
+#}
+
+#probe process("/usr/libexec/qemu-kvm").syscall {
+#	printf("%s\n", $syscall)
+#}
+
+#probe process("/usr/libexec/qemu-kvm").function("kvm_set_user_memory_region") {
+##red
+#	ansi_set_color(31)
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $slot$$)
+#}
+
+#probe process("/usr/libexec/qemu-kvm").statement("*@kvm-all.c:749"),
+#	  process("/usr/libexec/qemu-kvm").statement("*@kvm-all.c:772"),
+#	  process("/usr/libexec/qemu-kvm").statement("*@kvm-all.c:793"),
+#	  process("/usr/libexec/qemu-kvm").statement("*@kvm-all.c:817"),
+#	  process("/usr/libexec/qemu-kvm").statement("*@kvm-all.c:839")
+#{
+#	ansi_set_color(37) #gray
+#	printf("%s:\n", probefunc())
+#
+#	ansi_set_color(31) #red
+#	printf("section->mr->name = %s "
+#			"section->mr->alias = 0x%lx "
+#			"section->mr->ram = 0x%lx "
+#			"section->mr->rom_device = 0x%lx "
+#			"section->mr->readonly = 0x%lx "
+#			"section->size = 0x%lx "
+#			"section->readonly = 0x%lx "
+#			"section->offset_within_region = 0x%lx "
+#			"section->offset_within_address_space = 0x%lx "
+#			"\n",
+#			user_string($section->mr->name),
+#			$section->mr->alias,
+#			$section->mr->ram,
+#			$section->mr->rom_device,
+#			$section->mr->readonly,
+#			($section->size->hi << 64) + $section->size->lo,
+#			$section->readonly,
+#			$section->offset_within_region,
+#			$section->offset_within_address_space)
+#
+#	ansi_set_color(32) #green
+#	print_ubacktrace()
+#}
+#
+#probe process("/usr/libexec/qemu-kvm").function("memory_region_init_ram") {
+##green
+#	ansi_set_color(32)
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $$parms$)
+#	print_ubacktrace()
+#}
+#
+#probe process("/usr/libexec/qemu-kvm").function("kvm_set_phys_mem") {
+##purple
+#	ansi_set_color(35)
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $$parms$)
+#	print_ubacktrace()
+#}
+#
+#probe module("kvm").function("kvm_vm_ioctl_set_memory_region") {
+##green
+#	ansi_set_color(32)
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $$parms$)
+#	print_backtrace()
+#}
+#
+#probe module("kvm").function("tdp_page_fault") {
+##blue
+#	ansi_set_color(34)
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $$parms$)
+#	print_backtrace()
+#}
+
+#
+#probe process("/usr/libexec/qemu-kvm").function("kvm_set_phys_mem") {
+#	printf("%s: ", probefunc())
+#	printf("%s\n", $$parms$)
+#	print_ubacktrace()
+#}
+#
+probe kernel.function("__kmem_cache_create"), kernel.function("__slab_alloc") {
+	if (kernel_string($s->name) == "kmalloc-64(0:test)") {
+		printk(7, sprintf("%s: %s: %s\n", execname(), probefunc(), kernel_string($s->name)))
+		printk(7, sprint_backtrace())
+	}
+}
+#probe kernel.function("kmem_cache_create") {
+##blue
+#	messages_on = 1
+#	if (kernel_string($name) == "my_slab_obj" && messages_on) {
+#   		printf("%s\n", kernel_string($name))
+#	}
+#}
+
